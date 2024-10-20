@@ -13,8 +13,14 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "subnet_ids" {
-  description = "List of Subnet IDs to use for the EKS cluster"
+variable "private_subnet_ids" {
+  description = "List of private Subnet IDs to use for the EKS cluster"
+  type        = list(string)
+  default     = []  
+}
+
+variable "public_subnet_ids" {
+  description = "List of public Subnet IDs to use for the EKS cluster"
   type        = list(string)
   default     = []  
 }
