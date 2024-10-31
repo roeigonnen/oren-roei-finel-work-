@@ -63,8 +63,21 @@ provider "kubernetes" {
   host                   = aws_eks_cluster.demo.endpoint
   token                  = data.aws_eks_cluster_auth.demo.token
   cluster_ca_certificate = base64decode(aws_eks_cluster.demo.certificate_authority[0].data)
+
+ 
 }
 
+resource "aws_launch_template" "eks_launch_template" {
+  name_prefix   = "eks-test-1"
+  instance_type = "t2.micro"       # Change to your preferred instance type
+
+  # Specify the SSH key name here
+  key_name = "roei-gonnen-new-key"  # Replace with your actual SSH key name
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
 
 # Step 4: Create EKS node groups using the IAM role
 resource "aws_eks_node_group" "private_nodes" {
@@ -79,10 +92,14 @@ resource "aws_eks_node_group" "private_nodes" {
     min_size     = 1
   }
 
-  instance_types = ["t2.micro"]
+  launch_template {
+    id      = aws_launch_template.eks_launch_template.id
+    version = "$Latest"
+  }
 
   tags = {
     Name = "Team-H-Private"
+    
   }
 }
 
@@ -98,10 +115,15 @@ resource "aws_eks_node_group" "public_nodes" {
     min_size     = 1
   }
 
-  instance_types = ["t2.micro"]
+ launch_template {
+    id      = aws_launch_template.eks_launch_template.id
+    version = "$Latest"
+  }
+  
 
   tags = {
     Name = "Team-H-Public"
+    
   }
 }
 
@@ -110,86 +132,5 @@ resource "kubernetes_namespace" "app_namespace" {
   depends_on = [aws_eks_cluster.demo]  
   metadata {
     name = "django-app"
-  }
-}
-
-# Step 6: Define Kubernetes pods (after the namespace is created)
-# PostgreSQL private subnet pod
-resource "kubernetes_pod" "postgresql_pod" {
-  metadata {
-    name      = "postgresql-pod"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
-  }
-
-  spec {
-    node_selector = {
-      "eks.amazonaws.com/nodegroup" = aws_eks_node_group.private_nodes.node_group_name
-    }
-    
-    container {
-      name  = "postgresql-container"
-      image = "ubuntu:22.04"
-      command = ["sleep", "infinity"]
-    }
-  }
-}
-
-# Redis private subnet pod
-resource "kubernetes_pod" "redis_pod" {
-  metadata {
-    name      = "redis-pod"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
-  }
-
-  spec {
-    node_selector = {
-      "eks.amazonaws.com/nodegroup" = aws_eks_node_group.private_nodes.node_group_name
-    }
-
-    container {
-      name  = "redis-container"
-      image = "ubuntu:22.04"
-      command = ["sleep", "infinity"]
-    }
-  }
-}
-
-# Django public subnet pod
-resource "kubernetes_pod" "django_pod" {
-  metadata {
-    name      = "django-pod"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
-  }
-
-  spec {
-    node_selector = {
-      "eks.amazonaws.com/nodegroup" = aws_eks_node_group.public_nodes.node_group_name
-    }
-
-    container {
-      name  = "django-container"
-      image = "ubuntu:22.04"
-      command = ["sleep", "infinity"]
-    }
-  }
-}
-
-# Nginx public subnet pod
-resource "kubernetes_pod" "nginx_pod" {
-  metadata {
-    name      = "nginx-pod"
-    namespace = kubernetes_namespace.app_namespace.metadata[0].name
-  }
-
-  spec {
-    node_selector = {
-      "eks.amazonaws.com/nodegroup" = aws_eks_node_group.public_nodes.node_group_name
-    }
-
-    container {
-      name  = "nginx-container"
-      image = "ubuntu:22.04"
-      command = ["sleep", "infinity"]
-    }
   }
 }

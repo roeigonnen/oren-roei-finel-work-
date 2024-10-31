@@ -1,5 +1,5 @@
-aws_access_key = "access key"
-aws_secret_key = "private key"
+aws_access_key = "key"
+aws_secret_key = "secre key"
 
 
 # Private subnets
