@@ -28,14 +28,32 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                // הוספת קרדנשיאלס של AWS
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding', 
+                     accessKeyVariable: 'my-aws-access-key-id', 
+                     secretKeyVariable: 'my-aws-secret-access-key']
+                ]) {
                     script {
-                        sh "terraform plan -out=tfplan -var aws_access_key=${AWS_ACCESS_KEY_ID} -var aws_secret_key=${AWS_SECRET_ACCESS_KEY} -var region=${AWS_REGION} -var vpc_id=${VPC_ID} -var private_subnet_ids=[${PRIVATE_SUBNET_IDS}] -var public_subnet_ids=[${PUBLIC_SUBNET_IDS}]"
+                        sh "terraform plan -out=tfplan -var aws_access_key=${my-aws-access-key-id} -var aws_secret_key=${my-aws-secret-access-key} -var region=${AWS_REGION} -var vpc_id=${VPC_ID} -var private_subnet_ids=[${PRIVATE_SUBNET_IDS}] -var public_subnet_ids=[${PUBLIC_SUBNET_IDS}]"
                     }
                 }
             }
         }
-        // שלב ההפעלה של Terraform Apply יכול להיות כאן אם תרצה
+        stage('Terraform Apply') {
+            steps {
+                // הוספת שלב ההפעלה של Terraform
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding', 
+                     accessKeyVariable: 'my-aws-access-key-id', 
+                     secretKeyVariable: 'my-aws-secret-access-key']
+                ]) {
+                    script {
+                        sh 'terraform apply -auto-approve tfplan'
+                    }
+                }
+            }
+        }
     }
     post {
         always {
