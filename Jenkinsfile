@@ -1,12 +1,10 @@
 pipeline {
     agent any
     environment {
-        AWS_ACCESS_KEY_ID = credentials('my-aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('my-aws-secret-access-key')
-        AWS_REGION = "us-east-1"
-        VPC_ID = "vpc-099fdde38f98eac3d"
-        PRIVATE_SUBNET_IDS = '["subnet-082a99bcc991ec7b3","subnet-08590b68248b1367d"]'
-        PUBLIC_SUBNET_IDS = '["subnet-0e67fc294a37cf45d","subnet-071011b991f7704aa"]'
+        AWS_REGION = "us-east-1"  // הגדר את האזור המתאים
+        VPC_ID = "vpc-099fdde38f98eac3d"  // VPC ID שלך
+        PRIVATE_SUBNET_IDS = "subnet-082a99bcc991ec7b3,subnet-08590b68248b1367d"  // Private subnets
+        PUBLIC_SUBNET_IDS = "subnet-0e67fc294a37cf45d,subnet-071011b991f7704aa"  // Public subnets
     }
     stages {
         stage('Checkout Code') {
@@ -30,8 +28,10 @@ pipeline {
         }
         stage('Terraform Plan') {
             steps {
-                script {
-                    sh "terraform plan -out=tfplan -var aws_access_key=${AWS_ACCESS_KEY_ID} -var aws_secret_key=${AWS_SECRET_ACCESS_KEY} -var region=${AWS_REGION} -var vpc_id=${VPC_ID} -var private_subnet_ids=${PRIVATE_SUBNET_IDS} -var public_subnet_ids=${PUBLIC_SUBNET_IDS}"
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    script {
+                        sh "terraform plan -out=tfplan -var aws_access_key=${AWS_ACCESS_KEY_ID} -var aws_secret_key=${AWS_SECRET_ACCESS_KEY} -var region=${AWS_REGION} -var vpc_id=${VPC_ID} -var private_subnet_ids=[${PRIVATE_SUBNET_IDS}] -var public_subnet_ids=[${PUBLIC_SUBNET_IDS}]"
+                    }
                 }
             }
         }
